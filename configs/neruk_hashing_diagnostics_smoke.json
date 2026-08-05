@@ -1,0 +1,61 @@
+{
+  "name": "neruk-hashing-diagnostics-smoke",
+  "device": "cpu",
+  "dataset": {
+    "kind": "synthetic",
+    "train_documents": 40,
+    "validation_documents": 12,
+    "test_documents": 16,
+    "seed": 2026
+  },
+  "encoder": {
+    "kind": "hashing",
+    "dimension": 64,
+    "max_characters": 600
+  },
+  "training": {
+    "seeds": [17],
+    "oof_folds": 2,
+    "local": {
+      "hidden_dimension": 32,
+      "dropout": 0.1,
+      "learning_rate": 0.01,
+      "weight_decay": 0.0001,
+      "epochs": 8
+    }
+  },
+  "graph": {
+    "near_threshold_tokens": 30
+  },
+  "diagnostics": {
+    "optimization_seeds": [17],
+    "corruption_seeds": [101, 211],
+    "topology_seeds": [907, 1009],
+    "low_resource_fractions": [0.10, 0.25, 0.50, 1.00],
+    "low_resource_subset_seed": 271828,
+    "train_target_seed": 314159,
+    "validation_target_seed": 161803,
+    "alias_threshold": 0.90,
+    "propagation_alpha_grid": [0.0, 0.5, 1.0],
+    "ambiguous_surface_minimum_support": 2,
+    "ambiguous_surface_minimum_entropy_bits": 0.1,
+    "uncertainty_quantile": 0.75,
+    "bootstrap_samples": 100,
+    "bootstrap_seed": 9071986,
+    "model": {
+      "hidden_dimension": 32,
+      "layers": 1,
+      "dropout": 0.1,
+      "learning_rate": 0.01,
+      "weight_decay": 0.0001,
+      "epochs": 20,
+      "patience": 5,
+      "gradient_clip": 5.0,
+      "layer_normalization": true
+    }
+  },
+  "statistics": {
+    "bootstrap_samples": 100,
+    "bootstrap_seed": 9071986
+  }
+}

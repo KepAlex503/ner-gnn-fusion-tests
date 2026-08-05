@@ -1,0 +1,106 @@
+{
+  "name": "neruk-hashing-followup-smoke",
+  "device": "auto",
+  "dataset": {
+    "kind": "neruk",
+    "root": "data/external/ner-uk",
+    "validation_fraction": 0.15,
+    "split_seed": 2026
+  },
+  "encoder": {
+    "kind": "hashing",
+    "dimension": 128,
+    "max_characters": 700
+  },
+  "training": {
+    "seeds": [17],
+    "oof_folds": 3,
+    "local": {
+      "hidden_dimension": 64,
+      "dropout": 0.1,
+      "learning_rate": 0.01,
+      "weight_decay": 0.0001,
+      "epochs": 30
+    }
+  },
+  "graph": {
+    "near_threshold_tokens": 50
+  },
+  "followup": {
+    "alias_threshold_candidates": [0.88, 0.90, 0.92, 0.94, 0.96],
+    "alias_minimum_same_label_rate": 1.0,
+    "control_topology_seeds": [101, 211],
+    "model": {
+      "hidden_dimension": 48,
+      "layers": 1,
+      "dropout": 0.15,
+      "learning_rate": 0.004,
+      "weight_decay": 0.0001,
+      "epochs": 40,
+      "patience": 8,
+      "gradient_clip": 5.0,
+      "layer_normalization": true
+    },
+    "arms": [
+      {
+        "model": "N0_node_only",
+        "configuration": "none",
+        "features": "base"
+      },
+      {
+        "model": "N1_node_stats",
+        "configuration": "none",
+        "features": "stats"
+      },
+      {
+        "model": "G_repeat",
+        "configuration": "repeat",
+        "features": "base"
+      },
+      {
+        "model": "G_alias_repeat",
+        "configuration": "alias_repeat",
+        "features": "base"
+      },
+      {
+        "model": "G_context",
+        "configuration": "context",
+        "features": "base"
+      },
+      {
+        "model": "G_untyped",
+        "configuration": "untyped_all",
+        "features": "base"
+      },
+      {
+        "model": "G_untyped_random",
+        "configuration": "untyped_random",
+        "features": "base"
+      },
+      {
+        "model": "G_typed",
+        "configuration": "typed_all",
+        "features": "base"
+      },
+      {
+        "model": "G_type_shuffle",
+        "configuration": "type_shuffle",
+        "features": "base"
+      },
+      {
+        "model": "G_typed_random",
+        "configuration": "random",
+        "features": "base"
+      },
+      {
+        "model": "G_alias",
+        "configuration": "alias_all",
+        "features": "base"
+      }
+    ]
+  },
+  "statistics": {
+    "bootstrap_samples": 500,
+    "bootstrap_seed": 8675309
+  }
+}

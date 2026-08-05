@@ -1,0 +1,54 @@
+{
+  "name": "synthetic-smoke",
+  "device": "auto",
+  "dataset": {
+    "kind": "synthetic",
+    "train_documents": 60,
+    "validation_documents": 15,
+    "test_documents": 20,
+    "seed": 2026
+  },
+  "encoder": {
+    "kind": "hashing",
+    "dimension": 192,
+    "max_characters": 500
+  },
+  "training": {
+    "seeds": [17, 29, 43],
+    "oof_folds": 5,
+    "local": {
+      "hidden_dimension": 0,
+      "dropout": 0.0,
+      "learning_rate": 0.03,
+      "weight_decay": 0.0001,
+      "epochs": 70
+    },
+    "graph": {
+      "hidden_dimension": 64,
+      "dropout": 0.2,
+      "learning_rate": 0.005,
+      "weight_decay": 0.0001,
+      "epochs": 160,
+      "patience": 20,
+      "gradient_clip": 5.0,
+      "layer_normalization": true
+    }
+  },
+  "graph": {
+    "near_threshold_tokens": 35,
+    "configurations": ["none", "sent", "repeat", "near", "all", "random"]
+  },
+  "statistics": {
+    "bootstrap_samples": 1000,
+    "bootstrap_seed": 8675309
+  },
+  "robustness": {
+    "enabled": true,
+    "conditions": [
+      {"kind": "lowercase", "level": 1.0, "seed": 2026},
+      {"kind": "context_dropout", "level": 0.2, "seed": 2026},
+      {"kind": "asr", "level": 0.15, "seed": 2026}
+    ]
+  }
+}
+

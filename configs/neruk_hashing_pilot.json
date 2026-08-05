@@ -1,0 +1,53 @@
+{
+  "name": "neruk-hashing-pilot",
+  "device": "auto",
+  "dataset": {
+    "kind": "neruk",
+    "root": "data/external/ner-uk",
+    "validation_fraction": 0.15,
+    "split_seed": 2026
+  },
+  "encoder": {
+    "kind": "hashing",
+    "dimension": 512,
+    "max_characters": 700
+  },
+  "training": {
+    "seeds": [17, 29, 43],
+    "oof_folds": 5,
+    "local": {
+      "hidden_dimension": 128,
+      "dropout": 0.15,
+      "learning_rate": 0.01,
+      "weight_decay": 0.0001,
+      "epochs": 100
+    },
+    "graph": {
+      "hidden_dimension": 128,
+      "dropout": 0.25,
+      "learning_rate": 0.003,
+      "weight_decay": 0.0001,
+      "epochs": 250,
+      "patience": 30,
+      "gradient_clip": 5.0,
+      "layer_normalization": true
+    }
+  },
+  "graph": {
+    "near_threshold_tokens": 50,
+    "configurations": ["none", "sent", "repeat", "near", "all", "random"]
+  },
+  "statistics": {
+    "bootstrap_samples": 5000,
+    "bootstrap_seed": 8675309
+  },
+  "robustness": {
+    "enabled": true,
+    "conditions": [
+      {"kind": "lowercase", "level": 1.0, "seed": 2026},
+      {"kind": "context_dropout", "level": 0.15, "seed": 2026},
+      {"kind": "asr", "level": 0.1, "seed": 2026}
+    ]
+  }
+}
+

@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+artifacts/
+data/cache/
+data/models/
+tmp/
+
+# The official corpus is downloaded by scripts/download_neruk.py.
+data/external/ner-uk/
+
