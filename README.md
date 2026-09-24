@@ -211,3 +211,27 @@ XLM-R у зафіксованому основному протоколі зам
   bootstrap-контрастів;
 - `cohort_masks.npz` — frozen cohort masks із вирівняними mention IDs;
 - `diagnostic_manifest.json` — конфігурація, середовище та checksums.
+
+## Post-review controls
+
+Контроль Reviewer 1 перенавчає matched heads з доступним та сталим
+індикатором деградації:
+
+```bash
+python -m mention_graph.cli run-reviewer1-control \
+  --config configs/neruk_xlmr_reviewer1_q_control.json
+```
+
+Контроль Reviewer 2 порівнює exact-repeat і детерміновані token-level
+Ukrainian lemma edges. Для нього потрібен optional dependency group
+`morphology` із зафіксованими версіями `pymorphy3` та українського словника:
+
+```bash
+python -m mention_graph.cli run-reviewer2-morphology \
+  --config configs/neruk_xlmr_reviewer2_morphology.json
+```
+
+Runner відмовляється перезаписувати непорожню теку результатів. Для кожного
+seed він зберігає три checkpoints (`N0`, exact-repeat, lemma-repeat), тестові
+передбачення, validation-only вибір коефіцієнтів averaging, структурну
+статистику графів і crossed-bootstrap contrasts.

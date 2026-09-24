@@ -1,0 +1,65 @@
+{
+  "name": "neruk-xlmr-reviewer1-q-control",
+  "device": "auto",
+  "dataset": {
+    "kind": "neruk",
+    "root": "data/external/ner-uk",
+    "validation_fraction": 0.15,
+    "split_seed": 2026
+  },
+  "encoder": {
+    "kind": "transformer",
+    "model_name": "data/models/xlm-roberta-base",
+    "batch_size": 48,
+    "max_tokens": 256,
+    "max_characters": 900
+  },
+  "training": {
+    "seeds": [17, 29, 43, 59, 71, 89, 101, 113, 127, 149],
+    "oof_folds": 5,
+    "local": {
+      "hidden_dimension": 128,
+      "dropout": 0.15,
+      "learning_rate": 0.005,
+      "weight_decay": 0.0001,
+      "epochs": 120
+    }
+  },
+  "graph": {
+    "near_threshold_tokens": 50
+  },
+  "diagnostics": {
+    "optimization_seeds": [17, 29, 43, 59, 71, 89, 101, 113, 127, 149],
+    "corruption_seeds": [101, 211, 307, 401, 503],
+    "train_target_seed": 314159,
+    "validation_target_seed": 161803,
+    "alias_threshold": 0.90,
+    "propagation_alpha_grid": [0.0, 0.25, 0.50, 0.75, 1.0],
+    "bootstrap_samples": 20000,
+    "bootstrap_seed": 9071986,
+    "model": {
+      "hidden_dimension": 128,
+      "layers": 1,
+      "dropout": 0.2,
+      "learning_rate": 0.003,
+      "weight_decay": 0.0001,
+      "epochs": 200,
+      "patience": 25,
+      "gradient_clip": 5.0,
+      "layer_normalization": true
+    }
+  },
+  "reviewer1_control": {
+    "optimization_seeds": [17, 29, 43, 59, 71, 89, 101, 113, 127, 149],
+    "corruption_seeds": [101, 211, 307, 401, 503],
+    "train_target_seed": 314159,
+    "validation_target_seed": 161803,
+    "propagation_alpha_grid": [0.0, 0.25, 0.50, 0.75, 1.0],
+    "bootstrap_samples": 20000,
+    "bootstrap_seed": 9071986
+  },
+  "statistics": {
+    "bootstrap_samples": 20000,
+    "bootstrap_seed": 9071986
+  }
+}

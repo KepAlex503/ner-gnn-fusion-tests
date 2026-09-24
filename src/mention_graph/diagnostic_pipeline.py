@@ -183,6 +183,7 @@ def _evidence_inputs(
     evidence_mask: np.ndarray,
     evaluation_mask: np.ndarray,
     train_prior: np.ndarray,
+    degradation_indicator: bool = True,
 ) -> EvidenceInputs:
     mask = np.asarray(evidence_mask, dtype=bool)
     evaluation = np.asarray(evaluation_mask, dtype=bool)
@@ -213,12 +214,17 @@ def _evidence_inputs(
         raise ValueError("evidence probabilities contain non-finite values")
     probabilities /= probabilities.sum(axis=1, keepdims=True).clip(min=1e-12)
     structural = _base_structural_features(source)
+    indicator = (
+        mask.astype(np.float32)[:, None]
+        if degradation_indicator
+        else np.zeros((len(mask), 1), dtype=np.float32)
+    )
     features = np.concatenate(
         [
             embeddings,
             probabilities,
             structural,
-            mask.astype(np.float32)[:, None],
+            indicator,
         ],
         axis=1,
     ).astype(np.float32)
@@ -1309,6 +1315,11 @@ MODEL_METADATA: dict[str, dict[str, object]] = {
         "oracle_only": False,
         "uses_test_gold": False,
     },
+    "G_lemma": {
+        "deployable": True,
+        "oracle_only": False,
+        "uses_test_gold": False,
+    },
     "G_semantic_union": {
         "deployable": True,
         "oracle_only": False,
@@ -1325,6 +1336,11 @@ MODEL_METADATA: dict[str, dict[str, object]] = {
         "uses_test_gold": True,
     },
     "AVG_repeat": {
+        "deployable": True,
+        "oracle_only": False,
+        "uses_test_gold": False,
+    },
+    "AVG_lemma": {
         "deployable": True,
         "oracle_only": False,
         "uses_test_gold": False,

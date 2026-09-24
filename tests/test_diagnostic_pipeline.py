@@ -71,6 +71,59 @@ class EvidenceAndTargetTests(unittest.TestCase):
             inputs.local_probabilities,
         )
 
+    def test_degradation_indicator_can_be_held_constant_without_changing_other_features(self) -> None:
+        document = _document()
+        source = build_relational_source(
+            [document],
+            label_to_id={"LOC": 0},
+            near_threshold_tokens=20,
+            alias_threshold=0.9,
+        )
+        clean = np.arange(12, dtype=np.float32).reshape(3, 4)
+        surface = clean + 100
+        probabilities = np.ones((3, 1), dtype=np.float32)
+        mask = np.asarray([True, False, False])
+        flagged = _evidence_inputs(
+            clean,
+            surface,
+            probabilities,
+            probabilities,
+            source,
+            mode="surface",
+            evidence_mask=mask,
+            evaluation_mask=mask,
+            train_prior=np.asarray([1.0], dtype=np.float32),
+            degradation_indicator=True,
+        )
+        unflagged = _evidence_inputs(
+            clean,
+            surface,
+            probabilities,
+            probabilities,
+            source,
+            mode="surface",
+            evidence_mask=mask,
+            evaluation_mask=mask,
+            train_prior=np.asarray([1.0], dtype=np.float32),
+            degradation_indicator=False,
+        )
+        np.testing.assert_array_equal(
+            flagged.features[:, :-1],
+            unflagged.features[:, :-1],
+        )
+        np.testing.assert_array_equal(
+            flagged.features[:, -1],
+            mask.astype(np.float32),
+        )
+        np.testing.assert_array_equal(
+            unflagged.features[:, -1],
+            np.zeros(3, dtype=np.float32),
+        )
+        np.testing.assert_array_equal(
+            flagged.local_probabilities,
+            unflagged.local_probabilities,
+        )
+
 
 class CrossedBootstrapTests(unittest.TestCase):
     def test_interaction_uses_paired_realizations_and_documents(self) -> None:

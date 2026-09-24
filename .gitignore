@@ -12,3 +12,7 @@ tmp/
 # The official corpus is downloaded by scripts/download_neruk.py.
 data/external/ner-uk/
 
+
+# Symlinks to shared experiment data and run outputs (not published)
+artifacts
+data

@@ -12,6 +12,8 @@ from .experiments import (
     run_experiment,
 )
 from .followup import run_followup_experiment
+from .reviewer1_control import run_reviewer1_control
+from .reviewer2_morphology import run_reviewer2_morphology
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -52,6 +54,30 @@ def _parser() -> argparse.ArgumentParser:
         default=Path.cwd(),
     )
 
+    reviewer1_parser = subparsers.add_parser(
+        "run-reviewer1-control",
+        help="run the Reviewer 1 q_i on/off matched control",
+    )
+    reviewer1_parser.add_argument("--config", type=Path, required=True)
+    reviewer1_parser.add_argument("--output", type=Path)
+    reviewer1_parser.add_argument(
+        "--project-root",
+        type=Path,
+        default=Path.cwd(),
+    )
+
+    reviewer2_parser = subparsers.add_parser(
+        "run-reviewer2-morphology",
+        help="run the Reviewer 2 exact-repeat versus lemma-edge control",
+    )
+    reviewer2_parser.add_argument("--config", type=Path, required=True)
+    reviewer2_parser.add_argument("--output", type=Path)
+    reviewer2_parser.add_argument(
+        "--project-root",
+        type=Path,
+        default=Path.cwd(),
+    )
+
     inspect_parser = subparsers.add_parser(
         "inspect-data",
         help="validate a configured dataset and print its statistics",
@@ -86,6 +112,10 @@ def main() -> None:
         runner = run_followup_experiment
     elif arguments.command == "run-diagnostics":
         runner = run_diagnostic_experiment
+    elif arguments.command == "run-reviewer1-control":
+        runner = run_reviewer1_control
+    elif arguments.command == "run-reviewer2-morphology":
+        runner = run_reviewer2_morphology
     else:
         runner = run_experiment
     summary = runner(

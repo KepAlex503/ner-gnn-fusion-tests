@@ -15,6 +15,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10"]
+morphology = [
+  "pymorphy3==2.0.6",
+  "pymorphy3-dicts-uk==2.4.1.1.1663094765",
+]
 
 [project.scripts]
 mention-graph = "mention_graph.cli:main"
@@ -28,4 +32,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-

@@ -1,0 +1,55 @@
+{
+  "name": "neruk-xlmr-reviewer2-morphology-smoke",
+  "device": "auto",
+  "dataset": {
+    "kind": "neruk",
+    "root": "data/external/ner-uk",
+    "validation_fraction": 0.15,
+    "split_seed": 2026
+  },
+  "encoder": {
+    "kind": "transformer",
+    "model_name": "data/models/xlm-roberta-base",
+    "batch_size": 48,
+    "max_tokens": 256,
+    "max_characters": 900
+  },
+  "embedding_cache": "data/cache/embeddings",
+  "model_cache": "data/models",
+  "training": {
+    "oof_folds": 2,
+    "local": {
+      "hidden_dimension": 128,
+      "dropout": 0.15,
+      "learning_rate": 0.005,
+      "weight_decay": 0.0001,
+      "epochs": 2
+    }
+  },
+  "graph": {
+    "near_threshold_tokens": 50
+  },
+  "diagnostics": {
+    "alias_threshold": 0.9,
+    "model": {
+      "hidden_dimension": 128,
+      "layers": 1,
+      "dropout": 0.2,
+      "learning_rate": 0.003,
+      "weight_decay": 0.0001,
+      "epochs": 3,
+      "patience": 2,
+      "gradient_clip": 5.0,
+      "layer_normalization": true
+    }
+  },
+  "reviewer2_morphology": {
+    "optimization_seeds": [17],
+    "propagation_alpha_grid": [0.0, 0.25, 0.5, 0.75, 1.0],
+    "bootstrap_samples": 100,
+    "bootstrap_seed": 27182818,
+    "practical_threshold_macro_f1": 0.01,
+    "pymorphy3_version": "2.0.6",
+    "pymorphy3_dicts_uk_version": "2.4.1.1.1663094765"
+  }
+}
