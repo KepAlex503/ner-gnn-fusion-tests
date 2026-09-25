@@ -154,3 +154,9 @@ docs/working-notes-uk/    internal working notes in Ukrainian (not the reviewed 
 
 If you use this code, please cite the article above; full bibliographic
 details will be added after publication.
+
+## License
+
+The code is released under the [MIT License](LICENSE). The NER-UK 2.0 corpus
+and the XLM-RoBERTa model are not part of this repository and remain under
+their own licenses (CC BY-NC-SA 4.0 and MIT, respectively).
