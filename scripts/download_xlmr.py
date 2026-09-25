@@ -7,6 +7,8 @@ from huggingface_hub import snapshot_download
 
 
 MODEL_ID = "FacebookAI/xlm-roberta-base"
+# Hugging Face commit used for every experiment reported in the paper.
+REVISION = "e73636d4f797dec63c3081bb6ed5c7b0bb3f2089"
 REQUIRED_FILES = (
     "config.json",
     "model.safetensors",
@@ -33,6 +35,7 @@ def main() -> None:
     destination.mkdir(parents=True, exist_ok=True)
     snapshot_download(
         repo_id=MODEL_ID,
+        revision=REVISION,
         local_dir=destination,
         allow_patterns=list(REQUIRED_FILES),
     )
@@ -43,7 +46,7 @@ def main() -> None:
     ]
     if missing:
         raise SystemExit(f"download is incomplete; missing: {missing}")
-    print(f"Downloaded {MODEL_ID} to {destination}")
+    print(f"Downloaded {MODEL_ID}@{REVISION} to {destination}")
 
 
 if __name__ == "__main__":

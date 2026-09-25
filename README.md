@@ -1,237 +1,156 @@
-# Графове уточнення типів українських іменованих сутностей
+# Document-level inter-mention links for Ukrainian named-entity type classification
 
-Цей репозиторій реалізує експерименти E1-E5 зі статті про уточнення типів
-сутностей за відомих меж згадок. Основний режим використовує NER-UK 2.0,
-заморожений `FacebookAI/xlm-roberta-base`, локальний MLP та двошарову
-GraphSAGE. Окремий синтетичний режим перевіряє весь протокол без зовнішніх
-даних або моделей.
+Code for the controlled experiments in the article *Controlled Evaluation of
+Document-Level Inter-Mention Links for Named Entity Type Classification in
+Ukrainian Texts* (O. Hryshyn, V. Shymkovych, D. Grela; under review).
 
-Уже виконані прогони лежать у:
+The study asks whether links between repeated mentions within a document
+improve the classification of entity types when mention boundaries are
+known. It compares a graph-refinement head with a baseline that has the same
+head parameterization but exchanges no messages, and it adds
+degree-preserving topology shuffling, simple averaging, gold-label oracle
+diagnostics, and controlled weakening of local context.
 
-- `artifacts/neruk-xlmr` — основний XLM-R експеримент;
-- `artifacts/neruk-xlmr-followup` — причинно чистіші relation-aware
-  експерименти E6–E10 із matched controls;
-- `artifacts/neruk-hashing-pilot` — швидкий пілот на реальному корпусі;
-- `artifacts/synthetic-smoke` — контрольний синтетичний експеримент.
+Scope:
 
-Інтерпретація результатів і готові значення для таблиць статті наведені в
-`EXPERIMENT_REPORT_UK.md`.
+- **Task:** entity *type* classification of gold NER-UK 2.0 spans (all 13
+  classes, nested spans included). Boundary detection is not evaluated, so
+  results are not end-to-end NER scores.
+- **Encoder:** frozen `FacebookAI/xlm-roberta-base`. All compared heads
+  receive identical local representations; the encoder is never fine-tuned.
 
-Декомпозиція внеску голови, node statistics і власне adjacency, а також
-typed/random/type-shuffle controls наведені в
-`FOLLOWUP_EXPERIMENT_REPORT_UK.md`.
+The tag [`revision-1`](https://github.com/KepAlex503/ner-gnn-fusion-tests/tree/revision-1) marks the code state used for
+the revised manuscript.
 
-## Що саме реалізовано
+## Mapping from the paper to the code
 
-- документне розділення без перетину ідентифікаторів;
-- label-aware validation, виділений тільки з офіційної DEV-частини;
-- читання всіх 21 993 Brat-згадок, включно з вкладеними та 49 згадками через
-  перенос рядка;
-- перевірка точних і майже тотожних документів між поділами;
-- локальне span-pooling представлень XLM-R;
-- п'ятискладкові позаскладкові локальні ймовірності для навчальних графів;
-- ребра спільного речення, повторної нормалізованої форми та близькості;
-- контроль без ребер і випадковий контроль із точним збереженням топології
-  графа через перестановку вузлів у межах документа;
-- E1: локальна модель, узгодження повторів, GraphSAGE;
-- E2: `none`, `sent`, `repeat`, `near`, `all`, `random`;
-- E3: precision/recall/F1 за 13 класами та матриці помилок;
-- E4: групи частоти `1`, `2`, `3+`;
-- E5: нижній регістр, видалення контекстних слів та ASR-подібні заміни;
-- 3 парні початкові значення, середнє, стандартне відхилення і документний
-  paired bootstrap;
-- збереження ймовірностей кожної згадки, моделей, конфігурацій, графової
-  діагностики та SHA-256 конфігурації/коду.
+| Paper | What it covers | Command | Configuration |
+|---|---|---|---|
+| Exploratory stage (E1–E5) | Unmatched local vs. graph comparison, 3 seeds | `run` | `configs/neruk_xlmr.json` |
+| Exploratory stage (E6–E10) | Relation-aware follow-up | `run-followup` | `configs/neruk_xlmr_followup.json` |
+| Second stage E11–E15 | Oracle diagnostics, intervention-free comparison, context weakening, training-data volume, mention groups | `run-diagnostics` | `configs/neruk_xlmr_diagnostics.json` |
+| E13-R (post-review) | Degradation indicator `q_i` enabled vs. held at zero, matched retraining of `N0` and `G_rep` | `run-reviewer1-control` | `configs/neruk_xlmr_reviewer1_q_control.json` |
+| E12-M (post-review) | Exact-repeat vs. token-level lemma edges | `run-reviewer2-morphology` | `configs/neruk_xlmr_reviewer2_morphology.json` |
+| Table 4, coverage audit sample | Exact-repeat coverage by type; deterministic audit sample | `scripts/reviewer1_coverage_audit.py` | `configs/neruk_xlmr_diagnostics.json` |
+| Table 6 | Layer-wise parameter breakdown | `scripts/reviewer1_parameter_breakdown.py` | — |
 
-## Структура
+The exploratory stage generated hypotheses; the paper's inferential results
+come from the second stage and the two post-review controls. The protocols
+for the post-review analyses, fixed before the new models were trained, are
+in [`docs/protocols/`](docs/protocols/).
+
+Model names in the code differ slightly from the paper: `N0_node_only` is
+`N0`, `G_repeat` is `G_rep`, `G_lemma` is `G_lem`, `AVG_repeat` / `AVG_lemma`
+are `A_rep` / `A_lem`, `G_semantic_union` is `G_comb`, `O_pruned_union` is
+`G_clean`, `O_label_sparse` is `G_gold`, and `GoldVote_label_sparse` is `V_gold`.
+
+## Installation
+
+Python 3.11 or newer is required; the reported runs used Python 3.12.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -e ".[dev,download,morphology]"
+```
+
+For GPU runs, install the PyTorch build that matches your CUDA driver
+(the reported runs used PyTorch 2.13.0 with CUDA 13.0 on an NVIDIA RTX 4070
+SUPER). Exact versions of the direct dependencies are listed in
+`requirements-lock.txt`. The `morphology` extra is needed only for E12-M.
+
+## Data and model
+
+```bash
+python scripts/download_neruk.py    # NER-UK 2.0 at commit 7772b458...
+python scripts/download_xlmr.py     # XLM-R base at commit e73636d4...
+```
+
+Both scripts pin the revisions used in the paper. NER-UK 2.0
+(<https://github.com/lang-uk/ner-uk>) is distributed by its authors under
+CC BY-NC-SA 4.0 and is not included in this repository. Files are placed
+under `data/external/ner-uk/` and `data/models/xlm-roberta-base/`; encoder
+outputs are cached under `data/cache/`.
+
+## Running
+
+Every command writes to `artifacts/<config name>/` unless `--output` is
+given, and the post-review runners refuse to overwrite a non-empty output
+directory.
+
+```bash
+# Quick checks without the transformer
+python -m mention_graph.cli run --config configs/synthetic_smoke.json
+python -m mention_graph.cli run-diagnostics --config configs/neruk_hashing_diagnostics_smoke.json
+python -m mention_graph.cli run-reviewer1-control --config configs/reviewer1_q_control_smoke.json
+
+# Reduced E12-M run (uses the transformer encoder)
+python -m mention_graph.cli run-reviewer2-morphology --config configs/neruk_xlmr_reviewer2_morphology_smoke.json
+
+# Paper experiments
+python -m mention_graph.cli run-diagnostics --config configs/neruk_xlmr_diagnostics.json
+python -m mention_graph.cli run-reviewer1-control --config configs/neruk_xlmr_reviewer1_q_control.json
+python -m mention_graph.cli run-reviewer2-morphology --config configs/neruk_xlmr_reviewer2_morphology.json
+
+# Corpus statistics without training
+python -m mention_graph.cli inspect-data --config configs/neruk_xlmr.json
+```
+
+Auxiliary analyses:
+
+```bash
+python scripts/reviewer1_coverage_audit.py \
+  --config configs/neruk_xlmr_diagnostics.json \
+  --project-root . --output-directory artifacts/coverage-audit
+python scripts/reviewer1_parameter_breakdown.py --output artifacts/parameter_breakdown.csv
+```
+
+`scripts/summarize_reviewer1_audit.py` summarizes the manual audit decisions;
+the annotation file itself is not distributed (see below).
+
+Tests:
+
+```bash
+pytest
+```
+
+## Outputs
+
+Each run directory contains a `run_manifest.json` (configuration, software
+versions, GPU, and SHA-256 checksums of the configuration and source code),
+raw and summarized metrics, per-seed checkpoints, per-mention test
+predictions, the validation-only selection of the averaging coefficient, and
+crossed-bootstrap contrasts (optimization seeds crossed with
+source-stratified test documents, 20,000 replicates). The diagnostic run also
+writes the tables used in the paper (`table_g1_*.csv` to `table_g9_*.csv`) and
+frozen cohort masks.
+
+The trained checkpoints, predictions, and bootstrap outputs reported in the
+paper, as well as the manual coverage-audit annotations, are available from
+the corresponding author on reasonable request.
+
+## Reproducibility notes
+
+- Seeds, target selections, topology realizations, and bootstrap seeds are
+  fixed in the configuration files.
+- The original second-stage run (E11–E15) was executed on Windows; the
+  post-review controls were executed on Linux with the versions in
+  `requirements-lock.txt`. GPU non-determinism and platform differences can
+  change absolute values in the last digits; the paper compares the two
+  indicator regimes only within the same run.
+
+## Repository layout
 
 ```text
-configs/                    конфігурації трьох режимів
-scripts/                    завантаження NER-UK і XLM-R
-src/mention_graph/          код даних, графа, моделей і звітування
-tests/                      автоматичні перевірки leakage, графів і метрик
-artifacts/                  результати прогонів
-data/external/ner-uk/       офіційний корпус, не додається до Git
-data/models/xlm-roberta-base/  ваги моделі, не додаються до Git
+configs/                  experiment configurations (full runs and smoke tests)
+scripts/                  data/model download and auxiliary analyses
+src/mention_graph/        data loading, encoding, graphs, models, training, statistics
+tests/                    automated checks (leakage, graphs, metrics, controls)
+docs/protocols/           protocols for the post-review analyses
+docs/working-notes-uk/    internal working notes in Ukrainian (not the reviewed analysis)
 ```
 
-## Встановлення
+## Citation
 
-Команди для Windows PowerShell:
-
-```powershell
-python -m venv --system-site-packages .venv
-.\.venv\Scripts\python.exe -m pip install torch transformers
-.\.venv\Scripts\python.exe -m pip install --no-deps --no-build-isolation -e .
-```
-
-Для NVIDIA GPU варто встановити офіційну CUDA-збірку PyTorch, яка відповідає
-драйверу. Поточний прогін виконано з PyTorch `2.13.0+cu130`.
-
-Завантаження ресурсів:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\download_neruk.py
-.\.venv\Scripts\python.exe scripts\download_xlmr.py
-```
-
-NER-UK 2.0 поширюється авторами за CC BY-NC-SA 4.0. Репозиторій:
-<https://github.com/lang-uk/ner-uk>.
-
-## Запуск
-
-Спочатку швидка автономна перевірка:
-
-```powershell
-.\.venv\Scripts\python.exe -m mention_graph.cli run `
-  --config configs\synthetic_smoke.json
-```
-
-Пілот на NER-UK без трансформера:
-
-```powershell
-.\.venv\Scripts\python.exe -m mention_graph.cli run `
-  --config configs\neruk_hashing_pilot.json
-```
-
-Основний експеримент:
-
-```powershell
-.\.venv\Scripts\python.exe -m mention_graph.cli run `
-  --config configs\neruk_xlmr.json
-```
-
-Relation-aware follow-up E6–E10:
-
-```powershell
-.\.venv\Scripts\python.exe -m mention_graph.cli run-followup `
-  --config configs\neruk_xlmr_followup.json
-```
-
-Швидка перевірка follow-up pipeline без трансформера:
-
-```powershell
-.\.venv\Scripts\python.exe -m mention_graph.cli run-followup `
-  --config configs\neruk_hashing_followup_smoke.json
-```
-
-Перевірка складу даних без навчання:
-
-```powershell
-.\.venv\Scripts\python.exe -m mention_graph.cli inspect-data `
-  --config configs\neruk_xlmr.json
-```
-
-Тести:
-
-```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-
-## Основні артефакти одного прогону
-
-- `table_dataset.csv` - склад train/validation/test;
-- `table_e1.csv` ... `table_e5.csv` - таблиці для статті;
-- `metrics_by_seed.csv` і `metrics_detailed.json` - усі метрики;
-- `calibration_by_seed.csv` - NLL, Brier score та ECE;
-- `paired_bootstrap.json` - парні документні bootstrap-порівняння;
-- `confusion_matrices/` - матриці помилок за моделями й seed;
-- `qualitative_examples.json` - чотири категорії характерних випадків;
-- `graph_diagnostics.json` - кількість ребер та ізольованих вузлів;
-- `seed-*/test_predictions.npz` - індивідуальні ймовірності згадок;
-- `run_manifest.json` — версії, GPU, конфігурація і контрольні суми.
-
-Follow-up додатково створює:
-
-- `table_f1_alias_selection.csv` — validation-only вибір alias-порога;
-- `table_f2_edge_signal.csv` — coverage, label purity, Wilson CI та
-  relation-specific permutation null;
-- `table_f3_model_comparison.csv` — feature/architecture-matched arms;
-- `table_f4_subgroups.csv` і `table_f5_correction_harm.csv` — умовні
-  ефекти, виправлення та шкода;
-- `table_f6_counterfactual.csv` — same-checkpoint edge interventions;
-- `table_f7b_nested_bootstrap.csv` — crossed seed×document bootstrap;
-- `table_f9_control_strength.csv` — фактична сила random/type-shuffle
-  controls.
-
-## Важлива межа інтерпретації
-
-Це класифікація типу за правильних меж згадок, а не повний end-to-end NER.
-XLM-R у зафіксованому основному протоколі заморожена; навчаються локальна
-голова та GraphSAGE. Наскрізне донавчання кодувальника має бути окремою
-конфігурацією, бо воно змінює і обчислювальну вартість, і предмет порівняння.
-
-## Діагностичні експерименти E11–E15
-
-Окремий pipeline перевіряє, чи попередній слабкий graph effect пояснюється
-невдалою задачею, поганими ребрами або архітектурою:
-
-- sparse gold-label oracle як явно недеплойна верхня межа;
-- exact-repeat як silver identity relation;
-- target surface-only та train-prior masking із clean repeat peer;
-- whole-component masking як causal negative control;
-- reduced-supervision curve на 10%, 25%, 50% і 100% train-документів;
-- train-only lexical ambiguity та validation-derived uncertainty cohorts;
-- SimpleProp, no-edge і degree-preserving-random controls;
-- 10 optimization seeds, 5 target realizations і crossed seed×document
-  bootstrap.
-
-Повний запуск:
-
-```powershell
-.\.venv\Scripts\python.exe -m mention_graph.cli run-diagnostics `
-  --config configs\neruk_xlmr_diagnostics.json
-```
-
-Швидкий CPU smoke-test:
-
-```powershell
-.\.venv\Scripts\python.exe -m mention_graph.cli run-diagnostics `
-  --config configs\neruk_hashing_diagnostics_smoke.json
-```
-
-Протокол до запуску з технічними поправками:
-`DIAGNOSTIC_PROTOCOL_UK.md`.
-
-Підсумковий науковий звіт:
-`DECISIVE_DIAGNOSTIC_REPORT_UK.md`.
-
-Основні нові артефакти:
-
-- `table_g1_oracle_clean.csv` — natural task, oracle headroom і SimpleProp;
-- `table_g2_target_recovery.csv` — clean/target/component masking;
-- `table_g3_low_resource.csv` — reduced-supervision curve;
-- `table_g4_ambiguity.csv` — repeated, uncertain і train-ambiguous cohorts;
-- `table_g5_counterfactual.csv` — same-checkpoint interventions;
-- `table_g6_crossed_bootstrap.csv` — primary contrasts та interactions;
-- `table_g7_graph_diagnostics.csv` — параметри, ребра, homophily та
-  validation checkpoints;
-- `table_g8_control_strength.csv` — фактична сила degree-preserving rewiring;
-- `table_g9_decision_summary.csv` — компактна decision matrix усіх 17
-  bootstrap-контрастів;
-- `cohort_masks.npz` — frozen cohort masks із вирівняними mention IDs;
-- `diagnostic_manifest.json` — конфігурація, середовище та checksums.
-
-## Post-review controls
-
-Контроль Reviewer 1 перенавчає matched heads з доступним та сталим
-індикатором деградації:
-
-```bash
-python -m mention_graph.cli run-reviewer1-control \
-  --config configs/neruk_xlmr_reviewer1_q_control.json
-```
-
-Контроль Reviewer 2 порівнює exact-repeat і детерміновані token-level
-Ukrainian lemma edges. Для нього потрібен optional dependency group
-`morphology` із зафіксованими версіями `pymorphy3` та українського словника:
-
-```bash
-python -m mention_graph.cli run-reviewer2-morphology \
-  --config configs/neruk_xlmr_reviewer2_morphology.json
-```
-
-Runner відмовляється перезаписувати непорожню теку результатів. Для кожного
-seed він зберігає три checkpoints (`N0`, exact-repeat, lemma-repeat), тестові
-передбачення, validation-only вибір коефіцієнтів averaging, структурну
-статистику графів і crossed-bootstrap contrasts.
+If you use this code, please cite the article above; full bibliographic
+details will be added after publication.
